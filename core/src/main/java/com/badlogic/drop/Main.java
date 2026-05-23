@@ -40,6 +40,7 @@ public class Main extends ApplicationAdapter {   // Better to extend Application
     int score;
     BitmapFont font;
 
+    boolean gameOver;
 
     @Override
     public void create() {
@@ -68,22 +69,43 @@ public class Main extends ApplicationAdapter {   // Better to extend Application
         music.setVolume(0.5f);
         // music.play();
 
-        score=0;
+        score=3;
         font = new BitmapFont();
         font.setColor(Color.WHITE);
         font.getData().setScale(1.5f);
         // ADD THIS LINE TO SMOOTH OUT THE PIXELS:
         font.getRegion().getTexture().setFilter(Texture.TextureFilter.Linear, Texture.TextureFilter.Linear);
 
+        gameOver = false;
+
     }
 
     @Override
     public void render() {
-        input();
-        logic();
-        draw();
-    }
+        if(!gameOver && score < 10) {
+            input();
+            logic();
+            draw();
+        } else {
+            isSpaceKeyJustpressed();
+            draw();
+        }
 
+    }
+    private void isSpaceKeyJustpressed() {
+
+
+        if(Gdx.input.isKeyJustPressed(Input.Keys.SPACE)) {
+            score = 3;                  // Reset lives/score
+            dropSprites.clear();        // Clear all active raindrops off the screen
+            dropTimer = 0;              // Reset the spawn timer
+
+            // Reposition the bucket back to the center
+            bucketSprite.setPosition(3.5f, 0.5f);
+
+            gameOver = false;           // Turn off the game over flag to resume gameplay
+        }
+    }
     private void input() {
         float speed = 5f;                    // Much better speed
         float delta = Gdx.graphics.getDeltaTime();
@@ -100,6 +122,8 @@ public class Main extends ApplicationAdapter {   // Better to extend Application
             viewport.unproject(touchPos);
             bucketSprite.setCenterX(touchPos.x);
         }
+
+
     }
 
     private void logic() {
@@ -121,10 +145,15 @@ public class Main extends ApplicationAdapter {   // Better to extend Application
 
             if (drop.getY() < -drop.getHeight()) {
                 dropSprites.removeIndex(i);
+                score--;
             } else if (bucketRectangle.overlaps(dropRectangle)) {
                 dropSprites.removeIndex(i);
                 dropSound.play();
                 score++;
+            }
+
+            if(score==0) {
+                gameOver=true;
             }
         }
 
@@ -138,7 +167,17 @@ public class Main extends ApplicationAdapter {   // Better to extend Application
 
     private void draw() {
         // DRAW GAME WORLD (8x5 units) ----
-        ScreenUtils.clear(Color.BLACK);
+        if (gameOver ) {
+            // Light Blue: Red=0.6, Green=0.8, Blue=1.0, Alpha=1.0 (fully visible)
+            ScreenUtils.clear(Color.ORANGE);
+        } else if(score== 10) {
+            ScreenUtils.clear(0.6f, 0.8f, 1.0f, 1.0f);
+
+        }
+            else {
+            // Default Black screen for playing or winning
+            ScreenUtils.clear(Color.BLACK);
+        }
         viewport.apply();
         spriteBatch.setProjectionMatrix(viewport.getCamera().combined);
 
@@ -146,13 +185,15 @@ public class Main extends ApplicationAdapter {   // Better to extend Application
         float worldHeight = viewport.getWorldHeight();
 
         spriteBatch.begin();
-        spriteBatch.draw(backgroundTexture, 0, 0, worldWidth, worldHeight);
-        bucketSprite.draw(spriteBatch);
 
-        for (Sprite drop : dropSprites) {
-            drop.draw(spriteBatch);
+
+        if(!gameOver&& score < 10) {
+            spriteBatch.draw(backgroundTexture, 0, 0, worldWidth, worldHeight);
+            bucketSprite.draw(spriteBatch);
+            for (Sprite drop : dropSprites) {
+                drop.draw(spriteBatch);
+            }
         }
-
         spriteBatch.end();
         //DRAW UI (800x600 pixels) ----
             uiViewport.apply();
@@ -162,6 +203,14 @@ public class Main extends ApplicationAdapter {   // Better to extend Application
         // Position the text using the 800x600 UI space
         // 20 pixels from the left, 30 pixels from the top edge (600 - 30)
         font.draw(spriteBatch, "Score: " + score, 20, 570);
+
+        if(gameOver) {
+            font.draw(spriteBatch, "Press space to restart", 350, 350);
+        }
+        if(score == 10) {
+            font.draw(spriteBatch, "YOU WIN!", 350, 350);
+            font.draw(spriteBatch, "Press space to play again", 260, 300);
+        }
         spriteBatch.end();
     }
 
@@ -185,6 +234,7 @@ public class Main extends ApplicationAdapter {   // Better to extend Application
         music.dispose();
         spriteBatch.dispose();
         font.dispose();
+
     }
 
     @Override
