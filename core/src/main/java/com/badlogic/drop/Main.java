@@ -20,7 +20,7 @@ import com.badlogic.gdx.utils.viewport.FitViewport;
 
 import javax.crypto.Mac;
 
-public class Main extends ApplicationAdapter {   // Better to extend ApplicationAdapter
+public class Main extends ApplicationAdapter {
 
     Texture backgroundTexture;
     Texture bucketTexture;
@@ -46,6 +46,8 @@ public class Main extends ApplicationAdapter {   // Better to extend Application
     Texture goldTexture;
     Texture blueTexture;
     Texture redTexture;
+
+    boolean paused ;
 
     // Change from Array<Sprite> to your new polymorphic base class!
     Array<Drop> dropSprites;
@@ -86,6 +88,8 @@ public class Main extends ApplicationAdapter {   // Better to extend Application
         font.getRegion().getTexture().setFilter(Texture.TextureFilter.Linear, Texture.TextureFilter.Linear);
 
         gameOver = false;
+
+        paused = false;
 
     }
 
@@ -131,10 +135,15 @@ public class Main extends ApplicationAdapter {   // Better to extend Application
             bucketSprite.setCenterX(touchPos.x);
         }
 
+        if(Gdx.input.isKeyJustPressed(Input.Keys.P)){
+            paused = !paused;
+        }
+
 
     }
 
     private void logic() {
+        if(paused) return;
         float worldWidth = viewport.getWorldWidth();
         float bucketWidth = bucketSprite.getWidth();
 
