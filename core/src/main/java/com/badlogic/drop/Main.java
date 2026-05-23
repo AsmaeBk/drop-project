@@ -18,6 +18,8 @@ import com.badlogic.gdx.utils.Array;
 import com.badlogic.gdx.utils.ScreenUtils;
 import com.badlogic.gdx.utils.viewport.FitViewport;
 
+import javax.crypto.Mac;
+
 public class Main extends ApplicationAdapter {   // Better to extend ApplicationAdapter
 
     Texture backgroundTexture;
@@ -30,7 +32,6 @@ public class Main extends ApplicationAdapter {   // Better to extend Application
     FitViewport uiViewport; //for UI (Pixels)
 
     Sprite bucketSprite;
-    Array<Sprite> dropSprites;
 
     Vector2 touchPos;
     Rectangle bucketRectangle;
@@ -42,11 +43,19 @@ public class Main extends ApplicationAdapter {   // Better to extend Application
 
     boolean gameOver;
 
+    Texture goldTexture;
+    Texture blueTexture;
+    Texture redTexture;
+
+    // Change from Array<Sprite> to your new polymorphic base class!
+    Array<Drop> dropSprites;
     @Override
     public void create() {
         backgroundTexture = new Texture("background.png");
         bucketTexture = new Texture("bucket.png");
-        dropTexture = new Texture("drop.png");
+        blueTexture= new Texture("drop.png");
+        goldTexture= new Texture("goldDrop.png");
+        redTexture= new Texture("redDrop.png");
 
         dropSound = Gdx.audio.newSound(Gdx.files.internal("drop.mp3"));
         music = Gdx.audio.newMusic(Gdx.files.internal("music.mp3"));
@@ -94,7 +103,6 @@ public class Main extends ApplicationAdapter {   // Better to extend Application
     }
     private void isSpaceKeyJustpressed() {
 
-
         if(Gdx.input.isKeyJustPressed(Input.Keys.SPACE)) {
             score = 3;                  // Reset lives/score
             dropSprites.clear();        // Clear all active raindrops off the screen
@@ -138,18 +146,22 @@ public class Main extends ApplicationAdapter {   // Better to extend Application
 
         // Update drops
         for (int i = dropSprites.size - 1; i >= 0; i--) {
-            Sprite drop = dropSprites.get(i);
-            drop.translateY(-3f * delta);        // Faster falling
+            Drop drop = dropSprites.get(i);
+            drop.fall(delta);      // Faster falling
 
             dropRectangle.set(drop.getX(), drop.getY(), drop.getWidth(), drop.getHeight());
 
             if (drop.getY() < -drop.getHeight()) {
                 dropSprites.removeIndex(i);
-                score--;
+
+                // Penalty for missing a drop: only subtract if it wasn't an enemy Red drop!
+                if (!(drop instanceof RedDrop)) {
+                    score--;
+                }
             } else if (bucketRectangle.overlaps(dropRectangle)) {
                 dropSprites.removeIndex(i);
                 dropSound.play();
-                score++;
+                score += drop.getScoreValue();
             }
 
             if(score==0) {
@@ -196,7 +208,7 @@ public class Main extends ApplicationAdapter {   // Better to extend Application
         }
         spriteBatch.end();
         //DRAW UI (800x600 pixels) ----
-            uiViewport.apply();
+        uiViewport.apply();
         spriteBatch.setProjectionMatrix(uiViewport.getCamera().combined);
 
         spriteBatch.begin();
@@ -215,14 +227,21 @@ public class Main extends ApplicationAdapter {   // Better to extend Application
     }
 
     private void createDroplet() {
-        Sprite dropSprite = new Sprite(dropTexture);
-        dropSprite.setSize(1, 1);
+       double rand = MathUtils.random();
+       Drop newDrop ;
+       // 15% chance for Gold, 25% chance for Red, 60% chance for Blue
+        if (rand < 0.15f) {
+            newDrop = new GoldDrop(goldTexture);
+        } else if (rand < 0.40f) {
+            newDrop = new RedDrop(redTexture);
+        } else {
+            newDrop = new BlueDrop(blueTexture);
+        }
+
         float worldWidth = viewport.getWorldWidth();
-
-        dropSprite.setX(MathUtils.random(0f, worldWidth - 1f));
-        dropSprite.setY(viewport.getWorldHeight());
-
-        dropSprites.add(dropSprite);
+        newDrop.setX(MathUtils.random(0f, worldWidth - 1f));
+        newDrop.setY(viewport.getWorldHeight());
+        dropSprites.add(newDrop);
     }
 
     @Override
