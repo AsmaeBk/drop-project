@@ -7,6 +7,8 @@ import com.badlogic.gdx.audio.Music;
 import com.badlogic.gdx.audio.Sound;
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.Texture;
+
+import com.badlogic.gdx.graphics.g2d.BitmapFont;
 import com.badlogic.gdx.graphics.g2d.Sprite;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.math.MathUtils;
@@ -25,6 +27,8 @@ public class Main extends ApplicationAdapter {   // Better to extend Application
     Music music;
     SpriteBatch spriteBatch;
     FitViewport viewport;
+    FitViewport uiViewport; //for UI (Pixels)
+
     Sprite bucketSprite;
     Array<Sprite> dropSprites;
 
@@ -32,6 +36,10 @@ public class Main extends ApplicationAdapter {   // Better to extend Application
     Rectangle bucketRectangle;
     Rectangle dropRectangle;
     float dropTimer = 0;
+
+    int score;
+    BitmapFont font;
+
 
     @Override
     public void create() {
@@ -44,6 +52,8 @@ public class Main extends ApplicationAdapter {   // Better to extend Application
 
         spriteBatch = new SpriteBatch();
         viewport = new FitViewport(8, 5);
+        // Initialize the UI viewport with pixel units
+        uiViewport = new FitViewport(800, 600);
 
         bucketSprite = new Sprite(bucketTexture);
         bucketSprite.setSize(1, 1);
@@ -57,6 +67,14 @@ public class Main extends ApplicationAdapter {   // Better to extend Application
         music.setLooping(true);
         music.setVolume(0.5f);
         // music.play();
+
+        score=0;
+        font = new BitmapFont();
+        font.setColor(Color.WHITE);
+        font.getData().setScale(1.5f);
+        // ADD THIS LINE TO SMOOTH OUT THE PIXELS:
+        font.getRegion().getTexture().setFilter(Texture.TextureFilter.Linear, Texture.TextureFilter.Linear);
+
     }
 
     @Override
@@ -106,7 +124,7 @@ public class Main extends ApplicationAdapter {   // Better to extend Application
             } else if (bucketRectangle.overlaps(dropRectangle)) {
                 dropSprites.removeIndex(i);
                 dropSound.play();
-                // TODO: Add score here later
+                score++;
             }
         }
 
@@ -119,6 +137,7 @@ public class Main extends ApplicationAdapter {   // Better to extend Application
     }
 
     private void draw() {
+        // DRAW GAME WORLD (8x5 units) ----
         ScreenUtils.clear(Color.BLACK);
         viewport.apply();
         spriteBatch.setProjectionMatrix(viewport.getCamera().combined);
@@ -133,6 +152,16 @@ public class Main extends ApplicationAdapter {   // Better to extend Application
         for (Sprite drop : dropSprites) {
             drop.draw(spriteBatch);
         }
+
+        spriteBatch.end();
+        //DRAW UI (800x600 pixels) ----
+            uiViewport.apply();
+        spriteBatch.setProjectionMatrix(uiViewport.getCamera().combined);
+
+        spriteBatch.begin();
+        // Position the text using the 800x600 UI space
+        // 20 pixels from the left, 30 pixels from the top edge (600 - 30)
+        font.draw(spriteBatch, "Score: " + score, 20, 570);
         spriteBatch.end();
     }
 
@@ -155,10 +184,12 @@ public class Main extends ApplicationAdapter {   // Better to extend Application
         dropSound.dispose();
         music.dispose();
         spriteBatch.dispose();
+        font.dispose();
     }
 
     @Override
     public void resize(int width, int height) {
         viewport.update(width, height, true);
+        uiViewport.update(width, height, true); // Add this line
     }
 }
